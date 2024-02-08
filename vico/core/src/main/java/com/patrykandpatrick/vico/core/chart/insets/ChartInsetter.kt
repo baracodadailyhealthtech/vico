@@ -56,5 +56,6 @@ public interface ChartInsetter {
         context: MeasureContext,
         availableHeight: Float,
         outInsets: HorizontalInsets,
+        outContentInsets: HorizontalInsets,
     ): Unit = Unit
 }

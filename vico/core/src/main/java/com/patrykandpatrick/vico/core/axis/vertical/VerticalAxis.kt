@@ -23,6 +23,8 @@ import com.patrykandpatrick.vico.core.axis.AxisItemPlacer
 import com.patrykandpatrick.vico.core.axis.AxisPosition
 import com.patrykandpatrick.vico.core.axis.AxisRenderer
 import com.patrykandpatrick.vico.core.axis.setTo
+import com.patrykandpatrick.vico.core.axis.vertical.VerticalAxis.HorizontalLabelBehavior.HoverContent
+import com.patrykandpatrick.vico.core.axis.vertical.VerticalAxis.HorizontalLabelBehavior.PushContent
 import com.patrykandpatrick.vico.core.axis.vertical.VerticalAxis.HorizontalLabelPosition.Inside
 import com.patrykandpatrick.vico.core.axis.vertical.VerticalAxis.HorizontalLabelPosition.Outside
 import com.patrykandpatrick.vico.core.axis.vertical.VerticalAxis.VerticalLabelPosition.Center
@@ -41,6 +43,9 @@ import com.patrykandpatrick.vico.core.extension.half
 import com.patrykandpatrick.vico.core.extension.orZero
 import com.patrykandpatrick.vico.core.extension.translate
 import com.patrykandpatrick.vico.core.throwable.UnknownAxisPositionException
+import kotlin.contracts.ExperimentalContracts
+import kotlin.contracts.InvocationKind
+import kotlin.contracts.contract
 
 private const val TITLE_ABS_ROTATION_DEGREES = 90f
 
@@ -99,6 +104,11 @@ public class VerticalAxis<Position : AxisPosition.Vertical>(
      * Defines the vertical position of each axis label relative to its corresponding tick.
      */
     public var verticalLabelPosition: VerticalLabelPosition = Center
+
+    /**
+     * Defines the labels behavior when [horizontalLabelPosition] is set to [Inside].
+     */
+    public var horizontalLabelBehavior: HorizontalLabelBehavior = HoverContent
 
     override fun drawBehindChart(
         context: ChartDrawContext,
@@ -243,12 +253,23 @@ public class VerticalAxis<Position : AxisPosition.Vertical>(
         context: MeasureContext,
         availableHeight: Float,
         outInsets: HorizontalInsets,
+        outContentInsets: HorizontalInsets,
     ): Unit = with(context) {
-        val desiredWidth = getDesiredWidth(availableHeight)
+        val outInsetWidth: Float
+        val contentPushingInsetWidth: Float
+        measureInsets(availableHeight) { outside, inside ->
+            outInsetWidth = outside
+            contentPushingInsetWidth = inside
+        }
+
+        outContentInsets.set(
+            start = if (position.isStart) contentPushingInsetWidth else 0f,
+            end = if (position.isEnd) contentPushingInsetWidth else 0f,
+        )
 
         outInsets.set(
-            start = if (position.isStart) desiredWidth else 0f,
-            end = if (position.isEnd) desiredWidth else 0f,
+            start = if (position.isStart) outInsetWidth else 0f,
+            end = if (position.isEnd) outInsetWidth else 0f,
         )
     }
 
@@ -266,32 +287,67 @@ public class VerticalAxis<Position : AxisPosition.Vertical>(
     }
 
     /**
-     * Calculates the optimal width for this [VerticalAxis], accounting for the value of [sizeConstraint].
+     * Calculates the optimal insets for this [VerticalAxis], accounting for the value of [sizeConstraint].
+     * Returns two values:
+     * * outside is the inset applied between the chart borders and the axis
+     * * inside is a potential inset applied to the chart content, when the PushContent label behavior was set.
      */
-    private fun MeasureContext.getDesiredWidth(height: Float) = when (val constraint = sizeConstraint) {
-        is SizeConstraint.Auto -> {
-            val titleComponentWidth = title?.let { title ->
-                titleComponent?.getWidth(
-                    context = this,
-                    text = title,
-                    rotationDegrees = TITLE_ABS_ROTATION_DEGREES,
-                    height = bounds.height().toInt(),
-                )
-            }.orZero
-            val labelSpace = when (horizontalLabelPosition) {
-                Outside -> getMaxLabelWidth(height)
-                Inside -> 0f
-            }
-            (labelSpace + titleComponentWidth + axisThickness + tickLength)
-                .coerceIn(minimumValue = constraint.minSizeDp.pixels, maximumValue = constraint.maxSizeDp.pixels)
+    @OptIn(ExperimentalContracts::class)
+    private fun MeasureContext.measureInsets(height: Float, setResult: (outside: Float, inside: Float) -> Unit) {
+        contract {
+            callsInPlace(lambda = setResult, kind = InvocationKind.EXACTLY_ONCE)
         }
-        is SizeConstraint.Exact -> constraint.sizeDp.pixels
-        is SizeConstraint.Fraction -> canvasBounds.width() * constraint.fraction
-        is SizeConstraint.TextWidth -> label?.getWidth(
+
+        val titleComponentWidth by lazy { getTitleWidth() }
+        val areLabelsOutside = (horizontalLabelPosition == Outside)
+        val tempWidth = when (val constraint = sizeConstraint) {
+            is SizeConstraint.Auto -> {
+                when {
+                    areLabelsOutside ->
+                        (getMaxLabelWidth(height) + tickLength + titleComponentWidth + axisThickness).coerceIn(
+                            minimumValue = constraint.minSizeDp.pixels,
+                            maximumValue = constraint.maxSizeDp.pixels,
+                        )
+
+                    (horizontalLabelBehavior == PushContent) -> (getMaxLabelWidth(height) + tickLength).coerceIn(
+                        minimumValue = constraint.minSizeDp.pixels,
+                        maximumValue = constraint.maxSizeDp.pixels,
+                    )
+
+                    else -> 0f
+                }
+            }
+
+            is SizeConstraint.Exact -> constraint.sizeDp.pixels
+            is SizeConstraint.Fraction -> canvasBounds.width() * constraint.fraction
+            is SizeConstraint.TextWidth -> getLabelWidth(constraint.text) + tickLength + axisThickness
+        }
+
+        setResult(
+            /* outside = */ if (areLabelsOutside) tempWidth else (titleComponentWidth + axisThickness),
+            /* inside = */ if (areLabelsOutside) 0f else tempWidth,
+        )
+    }
+
+    @Suppress("nothing_to_inline")
+    private inline fun MeasureContext.getTitleWidth(): Float {
+        return title?.let {
+            titleComponent?.getWidth(
+                context = this,
+                text = title,
+                rotationDegrees = TITLE_ABS_ROTATION_DEGREES,
+                height = bounds.height().toInt(),
+            )
+        }.orZero
+    }
+
+    @Suppress("nothing_to_inline")
+    private inline fun MeasureContext.getLabelWidth(text: String): Float {
+        return label?.getWidth(
             context = this,
-            text = constraint.text,
+            text = text,
             rotationDegrees = labelRotationDegrees,
-        ).orZero + tickLength + axisThickness.half
+        ).orZero
     }
 
     private fun MeasureContext.getMaxLabelHeight() = label?.let { label ->
@@ -331,6 +387,14 @@ public class VerticalAxis<Position : AxisPosition.Vertical>(
         Center(VerticalPosition.Center),
         Top(VerticalPosition.Top),
         Bottom(VerticalPosition.Bottom),
+    }
+
+    /**
+     * Defines the behavior of the labels of a vertical axis.
+     * Available only when [horizontalLabelPosition] is [Inside].
+     */
+    public enum class HorizontalLabelBehavior {
+        HoverContent, PushContent
     }
 
     /**
@@ -379,6 +443,11 @@ public class VerticalAxis<Position : AxisPosition.Vertical>(
         public var verticalLabelPosition: VerticalLabelPosition = Center
 
         /**
+         * Defines the labels behavior when [horizontalLabelPosition] is set to [Inside].
+         */
+        public var horizontalLabelBehavior: HorizontalLabelBehavior = HoverContent
+
+        /**
          * Creates a [VerticalAxis] instance with the properties from this [Builder].
          */
         @Suppress("UNCHECKED_CAST")
@@ -395,6 +464,7 @@ public class VerticalAxis<Position : AxisPosition.Vertical>(
                 axis.labelSpacing = labelSpacing
                 axis.horizontalLabelPosition = horizontalLabelPosition
                 axis.verticalLabelPosition = verticalLabelPosition
+                axis.horizontalLabelBehavior = horizontalLabelBehavior
             } as VerticalAxis<T>
         }
     }

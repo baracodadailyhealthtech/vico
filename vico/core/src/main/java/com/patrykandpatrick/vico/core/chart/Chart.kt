@@ -16,6 +16,7 @@
 
 package com.patrykandpatrick.vico.core.chart
 
+import android.graphics.RectF
 import com.patrykandpatrick.vico.core.chart.column.ColumnChart
 import com.patrykandpatrick.vico.core.chart.composed.ComposedChart
 import com.patrykandpatrick.vico.core.chart.decoration.Decoration
@@ -33,6 +34,7 @@ import com.patrykandpatrick.vico.core.entry.ChartEntryModel
 import com.patrykandpatrick.vico.core.entry.diff.DrawingModel
 import com.patrykandpatrick.vico.core.entry.diff.ExtraStore
 import com.patrykandpatrick.vico.core.entry.diff.MutableExtraStore
+import com.patrykandpatrick.vico.core.extension.set
 import com.patrykandpatrick.vico.core.marker.Marker
 
 internal const val AXIS_VALUES_DEPRECATION_MESSAGE: String = "Axis values should be overridden via " +
@@ -98,6 +100,9 @@ public interface Chart<in Model> : BoundsAware, ChartInsetter {
      */
     @Deprecated(message = AXIS_VALUES_DEPRECATION_MESSAGE, level = DeprecationLevel.ERROR)
     public var maxX: Float?
+
+    /** Bounds for the chart content (columns, lines, ...) */
+    public val contentBounds: RectF
 
     /**
      * Responsible for drawing the chart itself and any decorations behind it.
@@ -189,6 +194,19 @@ public interface Chart<in Model> : BoundsAware, ChartInsetter {
         horizontalDimensions: MutableHorizontalDimensions,
         model: Model,
     )
+
+    /**
+     * Sets the bounds for the chart content (columns, lines, ...).
+     * Used when labels are configured to push the chart content.
+     */
+    public fun setChartContentBounds(
+        left: Number,
+        top: Number,
+        right: Number,
+        bottom: Number,
+    ) {
+        contentBounds.set(left, top, right, bottom)
+    }
 
     /**
      * Updates the [ChartValues] stored in the provided [ChartValuesManager] instance to this [Chart]’s [ChartValues].

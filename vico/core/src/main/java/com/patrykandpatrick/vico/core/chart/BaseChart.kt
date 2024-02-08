@@ -47,6 +47,8 @@ public abstract class BaseChart<in Model : ChartEntryModel> : Chart<Model>, Boun
 
     override val bounds: RectF = RectF()
 
+    override val contentBounds: RectF = RectF()
+
     override val chartInsetters: Collection<ChartInsetter> = persistentMarkers.values
 
     override var axisValuesOverrider: AxisValuesOverrider<@UnsafeVariance Model>? = null
@@ -108,7 +110,7 @@ public abstract class BaseChart<in Model : ChartEntryModel> : Chart<Model>, Boun
             entryLocationMap.getEntryModel(x)?.also { markerModel ->
                 marker.draw(
                     context = context,
-                    bounds = bounds,
+                    bounds = contentBounds,
                     markedEntries = markerModel,
                     chartValuesProvider = chartValuesProvider,
                 )
@@ -130,6 +132,14 @@ public abstract class BaseChart<in Model : ChartEntryModel> : Chart<Model>, Boun
             bottom = bounds.bottom + insets.bottom,
         ) {
             drawDecorationBehindChart(context)
+        }
+
+        canvas.inClip(
+            left = contentBounds.left - insets.getLeft(isLtr),
+            top = contentBounds.top - insets.top,
+            right = contentBounds.right + insets.getRight(isLtr),
+            bottom = contentBounds.bottom + insets.bottom,
+        ) {
             if (model.entries.isNotEmpty()) {
                 drawChart(context, model)
             }

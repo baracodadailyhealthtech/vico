@@ -301,7 +301,7 @@ internal fun <Model : ChartEntryModel> ChartImpl(
         wasZoomOverridden = wasZoomOverridden,
         getScroll = { chartScrollState.value },
         scrollBy = { value -> coroutineScope.launch { chartScrollState.scrollBy(value) } },
-        chartBounds = chart.bounds,
+        chartBounds = chart.contentBounds,
     )
 
     Canvas(
@@ -346,12 +346,12 @@ internal fun <Model : ChartEntryModel> ChartImpl(
         var finalZoom = zoom.floatValue
 
         if (!wasZoomOverridden.value || !chartScrollSpec.isScrollEnabled) {
-            finalZoom = measureContext.getAutoZoom(horizontalDimensions, chart.bounds, autoScaleUp)
+            finalZoom = measureContext.getAutoZoom(horizontalDimensions, chart.contentBounds, autoScaleUp)
             if (chartScrollSpec.isScrollEnabled) zoom.floatValue = finalZoom
         }
 
         chartScrollState.maxValue = measureContext.getMaxScrollDistance(
-            chartWidth = chart.bounds.width(),
+            chartWidth = chart.contentBounds.width(),
             horizontalDimensions = horizontalDimensions,
             zoom = finalZoom,
         )
@@ -380,7 +380,7 @@ internal fun <Model : ChartEntryModel> ChartImpl(
         chart.drawScrollableContent(chartDrawContext, model)
 
         fadingEdges?.apply {
-            applyFadingEdges(chartDrawContext, chart.bounds)
+            applyFadingEdges(chartDrawContext, chart.contentBounds)
             chartDrawContext.restoreCanvasToCount(count)
         }
 

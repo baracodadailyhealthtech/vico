@@ -38,6 +38,7 @@ import com.patrykandpatrick.vico.compose.component.shapeComponent
 import com.patrykandpatrick.vico.compose.component.textComponent
 import com.patrykandpatrick.vico.compose.dimensions.dimensionsOf
 import com.patrykandpatrick.vico.compose.style.LocalChartStyle
+import com.patrykandpatrick.vico.core.chart.addDecorations
 import com.patrykandpatrick.vico.core.chart.decoration.ThresholdLine
 import com.patrykandpatrick.vico.core.component.shape.Shapes
 import com.patrykandpatrick.vico.core.component.shape.shader.ComponentShader
@@ -86,11 +87,24 @@ public fun ThresholdLine() {
         Chart(
             modifier = Modifier,
             chart = columnChart().apply {
-                addDecoration(
-                    ThresholdLine(
-                        thresholdValue = 2f,
-                        lineComponent = shapeComponent(color = Color.Black),
-                        labelComponent = textComponent(Color.Black, padding = dimensionsOf(horizontal = 8.dp)),
+                addDecorations(
+                    listOf(
+                        ThresholdLine(
+                            thresholdValue = 2f,
+                            lineComponent = shapeComponent(color = Color.Black),
+                            labelComponent = textComponent(Color.Black, padding = dimensionsOf(horizontal = 8.dp)),
+                        ),
+                        ThresholdLine(
+                            thresholdValue = 3.5f,
+                            lineComponent = shapeComponent(color = Color.Black),
+                            labelComponent = textComponent(
+                                color = Color.Black,
+                                padding = dimensionsOf(horizontal = 4.dp),
+                                margins = dimensionsOf(horizontal = 4.dp),
+                                background = shapeComponent(color = Color.LightGray),
+                            ),
+                            labelVerticalPosition = ThresholdLine.LabelVerticalPosition.Center,
+                        ),
                     ),
                 )
             },

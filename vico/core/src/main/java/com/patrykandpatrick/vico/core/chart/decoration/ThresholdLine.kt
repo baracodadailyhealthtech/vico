@@ -115,6 +115,7 @@ public data class ThresholdLine(
         ).floor
         val textY = when (labelVerticalPosition) {
             LabelVerticalPosition.Top -> topY
+            LabelVerticalPosition.Center -> (topY + bottomY) / 2
             LabelVerticalPosition.Bottom -> bottomY
         }
 
@@ -165,6 +166,7 @@ public data class ThresholdLine(
      */
     public enum class LabelVerticalPosition(public val position: VerticalPosition) {
         Top(VerticalPosition.Top),
+        Center(VerticalPosition.Center),
         Bottom(VerticalPosition.Bottom),
     }
 

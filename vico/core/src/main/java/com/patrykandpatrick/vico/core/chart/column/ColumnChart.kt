@@ -138,7 +138,7 @@ public open class ColumnChart(
         drawingModel: ColumnChartDrawingModel?,
     ) {
         val yRange = (chartValues.maxY - chartValues.minY).takeIf { it != 0f } ?: return
-        val heightMultiplier = bounds.height() / yRange
+        val heightMultiplier = contentBounds.height() / yRange
 
         var drawingStart: Float
         var height: Float
@@ -146,7 +146,7 @@ public open class ColumnChart(
         var column: LineComponent
         var columnTop: Float
         var columnBottom: Float
-        val zeroLinePosition = bounds.bottom + chartValues.minY / yRange * bounds.height()
+        val zeroLinePosition = contentBounds.bottom + chartValues.minY / yRange * contentBounds.height()
 
         model.entries.forEachIndexed { index, entryCollection ->
 
@@ -156,7 +156,7 @@ public open class ColumnChart(
             entryCollection.forEachInIndexed(chartValues.minX..chartValues.maxX) { entryIndex, entry, _ ->
 
                 val columnInfo = drawingModel?.getOrNull(index)?.get(entry.x)
-                height = (columnInfo?.height ?: (abs(entry.y) / chartValues.lengthY)) * bounds.height()
+                height = (columnInfo?.height ?: (abs(entry.y) / chartValues.lengthY)) * contentBounds.height()
                 val xSpacingMultiplier = (entry.x - chartValues.minX) / chartValues.xStep
                 check(xSpacingMultiplier % 1f == 0f) { "Each entry’s x value must be a multiple of the x step." }
                 columnCenterX = drawingStart +
@@ -195,7 +195,7 @@ public open class ColumnChart(
                         top = columnTop,
                         bottom = columnBottom,
                         centerX = columnCenterX,
-                        boundingBox = bounds,
+                        boundingBox = contentBounds,
                         thicknessScale = zoom,
                     )
                 ) {
@@ -289,14 +289,14 @@ public open class ColumnChart(
                 rotationDegrees = dataLabelRotationDegrees,
             ).coerceAtMost(maximumValue = maxWidth)
 
-            if (x - dataLabelWidth.half > bounds.right || x + dataLabelWidth.half < bounds.left) return
+            if (x - dataLabelWidth.half > contentBounds.right || x + dataLabelWidth.half < contentBounds.left) return
 
             val labelVerticalPosition =
                 if (dataLabelValue < 0f) dataLabelVerticalPosition.negative() else dataLabelVerticalPosition
 
             val verticalPosition = labelVerticalPosition.inBounds(
                 y = y,
-                bounds = bounds,
+                bounds = contentBounds,
                 componentHeight = textComponent.getHeight(
                     context = this,
                     text = text,
@@ -323,10 +323,10 @@ public open class ColumnChart(
         column: LineComponent,
         index: Int,
     ) {
-        if (columnCenterX > bounds.left - 1 && columnCenterX < bounds.right + 1) {
+        if (columnCenterX > contentBounds.left - 1 && columnCenterX < contentBounds.right + 1) {
             entryLocationMap.put(
                 x = columnCenterX,
-                y = columnTop.coerceIn(bounds.top, bounds.bottom),
+                y = columnTop.coerceIn(contentBounds.top, contentBounds.bottom),
                 entry = entry,
                 color = column.color,
                 index = index,
@@ -404,7 +404,7 @@ public open class ColumnChart(
 
             MergeMode.Stack -> 0f
         }
-        return bounds.getStart(isLtr) + (
+        return contentBounds.getStart(isLtr) + (
             horizontalDimensions.startPadding +
                 (mergeModeComponent - getColumnCollectionWidth(entryCollectionCount).half) * zoom
             ) * layoutDirectionMultiplier

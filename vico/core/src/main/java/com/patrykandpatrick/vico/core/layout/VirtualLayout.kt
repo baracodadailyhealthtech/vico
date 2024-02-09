@@ -40,7 +40,11 @@ public open class VirtualLayout(
 
     private val finalInsets: Insets = Insets()
 
+    private val finalContentInsets: Insets = Insets()
+
     private val tempInsets: Insets = Insets()
+
+    private val tempContentInsets: Insets = Insets()
 
     /**
      * Measures and sets the bounds for the components of the chart.
@@ -81,8 +85,9 @@ public open class VirtualLayout(
         val availableHeight = contentBounds.height() - finalInsets.vertical - legendHeight
 
         tempInsetters.forEach { insetter ->
-            insetter.getHorizontalInsets(context, availableHeight, tempInsets)
+            insetter.getHorizontalInsets(context, availableHeight, tempInsets, tempContentInsets)
             finalInsets.setValuesIfGreater(tempInsets)
+            finalContentInsets.setValuesIfGreater(tempContentInsets)
         }
 
         val chartBounds = RectF().apply {
@@ -96,6 +101,13 @@ public open class VirtualLayout(
             left = chartBounds.left,
             top = chartBounds.top,
             right = chartBounds.right,
+            bottom = chartBounds.bottom,
+        )
+
+        chart.setChartContentBounds(
+            left = chartBounds.left + finalContentInsets.getLeft(isLtr),
+            top = chartBounds.top,
+            right = chartBounds.right - finalContentInsets.getRight(isLtr),
             bottom = chartBounds.bottom,
         )
 

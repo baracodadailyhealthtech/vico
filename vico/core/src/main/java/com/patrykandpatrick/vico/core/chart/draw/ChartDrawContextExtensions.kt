@@ -95,7 +95,7 @@ public fun <Model : ChartEntryModel> ChartDrawContext.drawMarker(
         ?.let { markerEntryModels ->
             marker.draw(
                 context = this,
-                bounds = chart.bounds,
+                bounds = chart.contentBounds,
                 markedEntries = markerEntryModels,
                 chartValuesProvider = chartValuesProvider,
             )

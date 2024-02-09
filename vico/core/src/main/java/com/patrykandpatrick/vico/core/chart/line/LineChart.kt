@@ -298,12 +298,12 @@ public open class LineChart(
             lineBackgroundPath.rewind()
             val component = lines.getRepeating(entryListIndex)
 
-            var prevX = bounds.getStart(isLtr = isLtr)
-            var prevY = bounds.bottom
+            var prevX = contentBounds.getStart(isLtr = isLtr)
+            var prevY = contentBounds.bottom
 
             val drawingStartAlignmentCorrection = layoutDirectionMultiplier * horizontalDimensions.startPadding
 
-            val drawingStart = bounds.getStart(isLtr = isLtr) + drawingStartAlignmentCorrection - horizontalScroll
+            val drawingStart = contentBounds.getStart(isLtr = isLtr) + drawingStartAlignmentCorrection - horizontalScroll
 
             forEachPointWithinBoundsIndexed(
                 entries = entries,
@@ -313,7 +313,7 @@ public open class LineChart(
                 if (linePath.isEmpty) {
                     linePath.moveTo(x, y)
                     if (component.hasLineBackgroundShader) {
-                        lineBackgroundPath.moveTo(x, bounds.bottom)
+                        lineBackgroundPath.moveTo(x, contentBounds.bottom)
                         lineBackgroundPath.lineTo(x, y)
                     }
                 } else {
@@ -324,7 +324,7 @@ public open class LineChart(
                         x = x,
                         y = y,
                         horizontalDimensions = horizontalDimensions,
-                        bounds = bounds,
+                        bounds = contentBounds,
                     )
                     if (component.hasLineBackgroundShader) {
                         component.pointConnector.connect(
@@ -334,17 +334,17 @@ public open class LineChart(
                             x = x,
                             y = y,
                             horizontalDimensions = horizontalDimensions,
-                            bounds = bounds,
+                            bounds = contentBounds,
                         )
                     }
                 }
                 prevX = x
                 prevY = y
 
-                if (x > bounds.left - 1 && x < bounds.right + 1) {
+                if (x > contentBounds.left - 1 && x < contentBounds.right + 1) {
                     entryLocationMap.put(
                         x = x,
-                        y = y.coerceIn(bounds.top, bounds.bottom),
+                        y = y.coerceIn(contentBounds.top, contentBounds.bottom),
                         entry = entry,
                         color = component.lineColor,
                         index = entryIndex,
@@ -353,9 +353,9 @@ public open class LineChart(
             }
 
             if (component.hasLineBackgroundShader) {
-                lineBackgroundPath.lineTo(prevX, bounds.bottom)
+                lineBackgroundPath.lineTo(prevX, contentBounds.bottom)
                 lineBackgroundPath.close()
-                component.drawBackgroundLine(context, bounds, lineBackgroundPath, drawingModel?.opacity ?: 1f)
+                component.drawBackgroundLine(context, contentBounds, lineBackgroundPath, drawingModel?.opacity ?: 1f)
             }
             component.drawLine(context, linePath, drawingModel?.opacity ?: 1f)
 
@@ -406,7 +406,7 @@ public open class LineChart(
                 )
                 val maxWidth = getMaxDataLabelWidth(chartEntry, x, previousX, nextX)
                 val verticalPosition = lineSpec.dataLabelVerticalPosition.inBounds(
-                    bounds = bounds,
+                    bounds = contentBounds,
                     distanceFromPoint = distanceFromLine,
                     componentHeight = textComponent.getHeight(
                         context = this,
@@ -496,15 +496,15 @@ public open class LineChart(
         var x: Float? = null
         var nextX: Float? = null
 
-        val boundsStart = bounds.getStart(isLtr = isLtr)
-        val boundsEnd = boundsStart + layoutDirectionMultiplier * bounds.width()
+        val boundsStart = contentBounds.getStart(isLtr = isLtr)
+        val boundsEnd = boundsStart + layoutDirectionMultiplier * contentBounds.width()
 
         fun getDrawX(entry: ChartEntry): Float = drawingStart + layoutDirectionMultiplier *
             horizontalDimensions.xSpacing * (entry.x - minX) / xStep
 
         fun getDrawY(entry: ChartEntry): Float =
-            bounds.bottom - (pointInfoMap?.get(entry.x)?.y ?: ((entry.y - chartValues.minY) / chartValues.lengthY)) *
-                bounds.height()
+            contentBounds.bottom - (pointInfoMap?.get(entry.x)?.y ?: ((entry.y - chartValues.minY) / chartValues.lengthY)) *
+                contentBounds.height()
 
         entries.forEachInIndexed(range = minX..maxX, padding = 1) { index, entry, next ->
             val previousX = x

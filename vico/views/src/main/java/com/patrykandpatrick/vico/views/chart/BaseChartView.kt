@@ -484,12 +484,12 @@ public abstract class BaseChartView<Model : ChartEntryModel> internal constructo
             var finalZoom = zoom
 
             if (!wasZoomOverridden || !chartScrollSpec.isScrollEnabled) {
-                finalZoom = measureContext.getAutoZoom(horizontalDimensions, chart.bounds, autoScaleUp)
+                finalZoom = measureContext.getAutoZoom(horizontalDimensions, chart.contentBounds, autoScaleUp)
                 if (chartScrollSpec.isScrollEnabled) zoom = finalZoom
             }
 
             scrollHandler.maxValue = measureContext.getMaxScrollDistance(
-                chartWidth = chart.bounds.width(),
+                chartWidth = chart.contentBounds.width(),
                 horizontalDimensions = horizontalDimensions,
                 zoom = finalZoom,
             )
@@ -513,7 +513,7 @@ public abstract class BaseChartView<Model : ChartEntryModel> internal constructo
             chart.drawScrollableContent(chartDrawContext, model)
 
             fadingEdges?.apply {
-                applyFadingEdges(chartDrawContext, chart.bounds)
+                applyFadingEdges(chartDrawContext, chart.contentBounds)
                 chartDrawContext.restoreCanvasToCount(count)
             }
 

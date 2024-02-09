@@ -46,6 +46,7 @@ import com.patrykandpatrick.vico.core.component.text.TextComponent
  * @param valueFormatter formats the labels.
  * @param sizeConstraint defines how the [VerticalAxis] is to size itself.
  * @param horizontalLabelPosition the horizontal position of the labels.
+ * @param horizontalLabelBehavior the behavior of the horizontal labels.
  * @param verticalLabelPosition the vertical position of the labels.
  * @param itemPlacer determines for what _y_ values the [VerticalAxis] is to display labels, ticks, and guidelines.
  * @param labelRotationDegrees the rotation of the axis labels (in degrees).
@@ -62,6 +63,7 @@ public fun rememberStartAxis(
     valueFormatter: AxisValueFormatter<AxisPosition.Vertical.Start> = DecimalFormatAxisValueFormatter(),
     sizeConstraint: Axis.SizeConstraint = Axis.SizeConstraint.Auto(),
     horizontalLabelPosition: VerticalAxis.HorizontalLabelPosition = VerticalAxis.HorizontalLabelPosition.Outside,
+    horizontalLabelBehavior: VerticalAxis.HorizontalLabelBehavior = VerticalAxis.HorizontalLabelBehavior.HoverContent,
     verticalLabelPosition: VerticalAxis.VerticalLabelPosition = VerticalAxis.VerticalLabelPosition.Center,
     itemPlacer: AxisItemPlacer.Vertical = remember { AxisItemPlacer.Vertical.default() },
     labelRotationDegrees: Float = currentChartStyle.axis.axisLabelRotationDegrees,
@@ -76,6 +78,7 @@ public fun rememberStartAxis(
     tickLengthDp = tickLength.value
     this.sizeConstraint = sizeConstraint
     this.horizontalLabelPosition = horizontalLabelPosition
+    this.horizontalLabelBehavior = horizontalLabelBehavior
     this.verticalLabelPosition = verticalLabelPosition
     this.itemPlacer = itemPlacer
     this.labelRotationDegrees = labelRotationDegrees
@@ -94,6 +97,7 @@ public fun rememberStartAxis(
  * @param valueFormatter formats the labels.
  * @param sizeConstraint defines how the [VerticalAxis] is to size itself.
  * @param horizontalLabelPosition the horizontal position of the labels.
+ * @param horizontalLabelBehavior the behavior of the horizontal labels.
  * @param verticalLabelPosition the vertical position of the labels.
  * @param itemPlacer determines for what _y_ values the [VerticalAxis] is to display labels, ticks, and guidelines.
  * @param labelRotationDegrees the rotation of the axis labels (in degrees).
@@ -110,6 +114,7 @@ public fun rememberEndAxis(
     valueFormatter: AxisValueFormatter<AxisPosition.Vertical.End> = DecimalFormatAxisValueFormatter(),
     sizeConstraint: Axis.SizeConstraint = Axis.SizeConstraint.Auto(),
     horizontalLabelPosition: VerticalAxis.HorizontalLabelPosition = VerticalAxis.HorizontalLabelPosition.Outside,
+    horizontalLabelBehavior: VerticalAxis.HorizontalLabelBehavior = VerticalAxis.HorizontalLabelBehavior.HoverContent,
     verticalLabelPosition: VerticalAxis.VerticalLabelPosition = VerticalAxis.VerticalLabelPosition.Center,
     itemPlacer: AxisItemPlacer.Vertical = remember { AxisItemPlacer.Vertical.default() },
     labelRotationDegrees: Float = currentChartStyle.axis.axisLabelRotationDegrees,
@@ -124,6 +129,7 @@ public fun rememberEndAxis(
     tickLengthDp = tickLength.value
     this.sizeConstraint = sizeConstraint
     this.horizontalLabelPosition = horizontalLabelPosition
+    this.horizontalLabelBehavior = horizontalLabelBehavior
     this.verticalLabelPosition = verticalLabelPosition
     this.itemPlacer = itemPlacer
     this.labelRotationDegrees = labelRotationDegrees
@@ -142,6 +148,7 @@ public fun rememberEndAxis(
  * @param valueFormatter formats the labels.
  * @param sizeConstraint defines how the [VerticalAxis] is to size itself.
  * @param horizontalLabelPosition the horizontal position of the labels.
+ * @param horizontalLabelBehavior the behavior of the horizontal labels.
  * @param verticalLabelPosition the vertical position of the labels.
  * @param maxLabelCount the maximum label count.
  * @param labelRotationDegrees the rotation of the axis labels (in degrees).
@@ -166,6 +173,7 @@ public fun startAxis(
     valueFormatter: AxisValueFormatter<AxisPosition.Vertical.Start> = DecimalFormatAxisValueFormatter(),
     sizeConstraint: Axis.SizeConstraint = Axis.SizeConstraint.Auto(),
     horizontalLabelPosition: VerticalAxis.HorizontalLabelPosition = VerticalAxis.HorizontalLabelPosition.Outside,
+    horizontalLabelBehavior: VerticalAxis.HorizontalLabelBehavior = VerticalAxis.HorizontalLabelBehavior.HoverContent,
     verticalLabelPosition: VerticalAxis.VerticalLabelPosition = VerticalAxis.VerticalLabelPosition.Center,
     maxLabelCount: Int = DEF_LABEL_COUNT,
     labelRotationDegrees: Float = currentChartStyle.axis.axisLabelRotationDegrees,
@@ -180,6 +188,7 @@ public fun startAxis(
     valueFormatter,
     sizeConstraint,
     horizontalLabelPosition,
+    horizontalLabelBehavior,
     verticalLabelPosition,
     remember { AxisItemPlacer.Vertical.default(maxLabelCount) },
     labelRotationDegrees,
@@ -198,6 +207,7 @@ public fun startAxis(
  * @param valueFormatter formats the labels.
  * @param sizeConstraint defines how the [VerticalAxis] is to size itself.
  * @param horizontalLabelPosition the horizontal position of the labels.
+ * @param horizontalLabelBehavior the behavior of the horizontal labels.
  * @param verticalLabelPosition the vertical position of the labels.
  * @param maxLabelCount the maximum label count.
  * @param labelRotationDegrees the rotation of the axis labels (in degrees).
@@ -222,6 +232,7 @@ public fun endAxis(
     valueFormatter: AxisValueFormatter<AxisPosition.Vertical.End> = DecimalFormatAxisValueFormatter(),
     sizeConstraint: Axis.SizeConstraint = Axis.SizeConstraint.Auto(),
     horizontalLabelPosition: VerticalAxis.HorizontalLabelPosition = VerticalAxis.HorizontalLabelPosition.Outside,
+    horizontalLabelBehavior: VerticalAxis.HorizontalLabelBehavior = VerticalAxis.HorizontalLabelBehavior.HoverContent,
     verticalLabelPosition: VerticalAxis.VerticalLabelPosition = VerticalAxis.VerticalLabelPosition.Center,
     maxLabelCount: Int = DEF_LABEL_COUNT,
     labelRotationDegrees: Float = currentChartStyle.axis.axisLabelRotationDegrees,
@@ -236,6 +247,7 @@ public fun endAxis(
     valueFormatter,
     sizeConstraint,
     horizontalLabelPosition,
+    horizontalLabelBehavior,
     verticalLabelPosition,
     remember { AxisItemPlacer.Vertical.default(maxLabelCount) },
     labelRotationDegrees,

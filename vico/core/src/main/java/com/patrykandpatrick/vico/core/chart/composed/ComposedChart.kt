@@ -55,6 +55,8 @@ public class ComposedChart<Model : ChartEntryModel>(
 
     private val tempInsets = Insets()
 
+    private val tempContentInsets = Insets()
+
     override val entryLocationMap: TreeMap<Float, MutableList<Marker.EntryModel>> = TreeMap()
 
     override val chartInsetters: Collection<ChartInsetter>
@@ -79,6 +81,11 @@ public class ComposedChart<Model : ChartEntryModel>(
     override fun setBounds(left: Number, top: Number, right: Number, bottom: Number) {
         this.bounds.set(left, top, right, bottom)
         charts.forEach { chart -> chart.setBounds(left, top, right, bottom) }
+    }
+
+    override fun setChartContentBounds(left: Number, top: Number, right: Number, bottom: Number) {
+        super.setChartContentBounds(left, top, right, bottom)
+        charts.forEach { chart -> chart.setChartContentBounds(left, top, right, bottom) }
     }
 
     override fun drawChart(
@@ -135,10 +142,16 @@ public class ComposedChart<Model : ChartEntryModel>(
         }
     }
 
-    override fun getHorizontalInsets(context: MeasureContext, availableHeight: Float, outInsets: HorizontalInsets) {
+    override fun getHorizontalInsets(
+        context: MeasureContext,
+        availableHeight: Float,
+        outInsets: HorizontalInsets,
+        outContentInsets: HorizontalInsets,
+    ) {
         charts.forEach { chart ->
-            chart.getHorizontalInsets(context, availableHeight, tempInsets)
+            chart.getHorizontalInsets(context, availableHeight, tempInsets, tempContentInsets)
             outInsets.setValuesIfGreater(start = tempInsets.start, end = tempInsets.end)
+            outContentInsets.setValuesIfGreater(start = tempContentInsets.start, end = tempContentInsets.end)
         }
     }
 

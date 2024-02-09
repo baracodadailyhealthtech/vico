@@ -114,7 +114,6 @@ public open class MarkerComponent(
             textX = x,
             textY = bounds.top - labelBounds.height() - label.tickSizeDp.pixels,
             verticalPosition = VerticalPosition.Bottom,
-            maxTextWidth = minOf(bounds.right - x, x - bounds.left).doubled.ceil.toInt(),
         )
     }
 

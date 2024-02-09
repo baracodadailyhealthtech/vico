@@ -56,7 +56,7 @@ public data class ThresholdLine(
     ),
     val lineComponent: ShapeComponent = ShapeComponent(),
     val minimumLineThicknessDp: Float = DefaultDimens.THRESHOLD_LINE_THICKNESS,
-    val labelComponent: TextComponent = textComponent(),
+    val labelComponent: TextComponent? = textComponent(),
     val labelHorizontalPosition: LabelHorizontalPosition = LabelHorizontalPosition.Start,
     val labelVerticalPosition: LabelVerticalPosition = LabelVerticalPosition.Top,
     val labelRotationDegrees: Float = 0f,
@@ -80,7 +80,7 @@ public data class ThresholdLine(
         thresholdLabel: CharSequence = decimalFormat.format(thresholdValue),
         lineComponent: ShapeComponent = ShapeComponent(),
         minimumLineThicknessDp: Float = DefaultDimens.THRESHOLD_LINE_THICKNESS,
-        labelComponent: TextComponent = textComponent(),
+        labelComponent: TextComponent? = textComponent(),
         labelHorizontalPosition: LabelHorizontalPosition = LabelHorizontalPosition.Start,
         labelVerticalPosition: LabelVerticalPosition = LabelVerticalPosition.Top,
         labelRotationDegrees: Float = 0f,
@@ -126,27 +126,29 @@ public data class ThresholdLine(
             top = topY,
             bottom = bottomY,
         )
-        labelComponent.drawText(
-            context = context,
-            text = thresholdLabel,
-            maxTextWidth = bounds.width().toInt(),
-            textX = when (labelHorizontalPosition) {
-                LabelHorizontalPosition.Start -> bounds.getStart(isLtr = isLtr)
-                LabelHorizontalPosition.End -> bounds.getEnd(isLtr = isLtr)
-            },
-            textY = textY,
-            horizontalPosition = labelHorizontalPosition.position,
-            verticalPosition = labelVerticalPosition.position.inBounds(
-                bounds = bounds,
-                componentHeight = labelComponent.getHeight(
-                    context = context,
-                    text = thresholdLabel,
-                    rotationDegrees = labelRotationDegrees,
+        labelComponent?.let {
+            labelComponent.drawText(
+                context = context,
+                text = thresholdLabel,
+                maxTextWidth = bounds.width().toInt(),
+                textX = when (labelHorizontalPosition) {
+                    LabelHorizontalPosition.Start -> bounds.getStart(isLtr = isLtr)
+                    LabelHorizontalPosition.End -> bounds.getEnd(isLtr = isLtr)
+                },
+                textY = textY,
+                horizontalPosition = labelHorizontalPosition.position,
+                verticalPosition = labelVerticalPosition.position.inBounds(
+                    bounds = bounds,
+                    componentHeight = labelComponent.getHeight(
+                        context = context,
+                        text = thresholdLabel,
+                        rotationDegrees = labelRotationDegrees,
+                    ),
+                    y = textY,
                 ),
-                y = textY,
-            ),
-            rotationDegrees = labelRotationDegrees,
-        )
+                rotationDegrees = labelRotationDegrees,
+            )
+        }
     }
 
     /**

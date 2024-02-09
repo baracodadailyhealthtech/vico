@@ -30,6 +30,7 @@ import com.patrykandpatrick.vico.core.chart.composed.ComposedChart
 import com.patrykandpatrick.vico.core.chart.decoration.Decoration
 import com.patrykandpatrick.vico.core.chart.values.AxisValuesOverrider
 import com.patrykandpatrick.vico.core.chart.values.ChartValues
+import com.patrykandpatrick.vico.core.chart.values.ComponentOverrider
 import com.patrykandpatrick.vico.core.component.shape.LineComponent
 import com.patrykandpatrick.vico.core.component.text.TextComponent
 import com.patrykandpatrick.vico.core.component.text.VerticalPosition
@@ -58,6 +59,8 @@ import com.patrykandpatrick.vico.core.marker.Marker
  * @param targetVerticalAxisPosition if this is set, any [AxisRenderer] with an [AxisPosition] equal to the provided
  * value will use the [ChartValues] provided by this chart. This is meant to be used with [ComposedChart].
  * @param drawingModelInterpolator interpolates the [ColumnChart]’s [ColumnChartDrawingModel]s.
+ * @param columnLineComponentOverrider allows overriding some parameters of the default [LineComponent] for a specific
+ * [ChartEntryModel]
  *
  * @see Chart
  * @see ColumnChart
@@ -78,6 +81,7 @@ public fun columnChart(
     axisValuesOverrider: AxisValuesOverrider<ChartEntryModel>? = null,
     drawingModelInterpolator: DrawingModelInterpolator<ColumnChartDrawingModel.ColumnInfo, ColumnChartDrawingModel> =
         remember { DefaultDrawingModelInterpolator() },
+    columnLineComponentOverrider: ComponentOverrider? = null,
 ): ColumnChart = remember { ColumnChart() }.apply {
     this.columns = columns
     this.spacingDp = spacing.value
@@ -90,6 +94,7 @@ public fun columnChart(
     this.axisValuesOverrider = axisValuesOverrider
     this.targetVerticalAxisPosition = targetVerticalAxisPosition
     this.drawingModelInterpolator = drawingModelInterpolator
+    this.columnLineComponentOverrider = columnLineComponentOverrider
     decorations?.also(::setDecorations)
     persistentMarkers?.also(::setPersistentMarkers)
 }

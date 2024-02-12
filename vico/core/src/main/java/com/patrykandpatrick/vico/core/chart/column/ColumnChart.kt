@@ -30,7 +30,10 @@ import com.patrykandpatrick.vico.core.chart.put
 import com.patrykandpatrick.vico.core.chart.values.ChartValues
 import com.patrykandpatrick.vico.core.chart.values.ChartValuesManager
 import com.patrykandpatrick.vico.core.chart.values.ChartValuesProvider
+import com.patrykandpatrick.vico.core.chart.values.ComponentOverrider
+import com.patrykandpatrick.vico.core.chart.values.overrideComponentForEntry
 import com.patrykandpatrick.vico.core.component.shape.LineComponent
+import com.patrykandpatrick.vico.core.component.shape.shader.DynamicShader
 import com.patrykandpatrick.vico.core.component.text.TextComponent
 import com.patrykandpatrick.vico.core.component.text.VerticalPosition
 import com.patrykandpatrick.vico.core.component.text.inBounds
@@ -45,6 +48,7 @@ import com.patrykandpatrick.vico.core.extension.doubled
 import com.patrykandpatrick.vico.core.extension.getRepeating
 import com.patrykandpatrick.vico.core.extension.getStart
 import com.patrykandpatrick.vico.core.extension.half
+import com.patrykandpatrick.vico.core.extension.setAll
 import com.patrykandpatrick.vico.core.formatter.DecimalFormatValueFormatter
 import com.patrykandpatrick.vico.core.formatter.ValueFormatter
 import com.patrykandpatrick.vico.core.marker.Marker
@@ -66,6 +70,8 @@ import kotlin.math.abs
  * @param dataLabelValueFormatter the [ValueFormatter] to use for data labels.
  * @param dataLabelRotationDegrees the rotation of data labels (in degrees).
  * @param drawingModelInterpolator interpolates the [ColumnChart]’s [ColumnChartDrawingModel]s.
+ * @param columnLineComponentOverrider allows overriding some parameters of the default [LineComponent] for a specific
+ * [ChartEntryModel]
  */
 public open class ColumnChart(
     public var columns: List<LineComponent>,
@@ -81,6 +87,7 @@ public open class ColumnChart(
         ColumnChartDrawingModel.ColumnInfo,
         ColumnChartDrawingModel,
         > = DefaultDrawingModelInterpolator(),
+    public var columnLineComponentOverrider: ComponentOverrider? = null,
 ) : BaseChart<ChartEntryModel>() {
 
     /**
@@ -119,16 +126,22 @@ public open class ColumnChart(
 
     override val entryLocationMap: HashMap<Float, MutableList<Marker.EntryModel>> = HashMap()
 
+    private val columnLineComponentOverridesMap: HashMap<String, LineComponent> = HashMap()
+    private val unusedColumnLineComponentOverrides: MutableList<String> = mutableListOf()
+
     override fun drawChart(
         context: ChartDrawContext,
         model: ChartEntryModel,
     ): Unit = with(context) {
         entryLocationMap.clear()
+        unusedColumnLineComponentOverrides.setAll(columnLineComponentOverridesMap.keys)
         drawChartInternal(
             chartValues = chartValuesProvider.getChartValues(axisPosition = targetVerticalAxisPosition),
             model = model,
             drawingModel = model.extraStore.getOrNull(drawingModelKey),
         )
+        unusedColumnLineComponentOverrides.forEach(columnLineComponentOverridesMap::remove)
+        unusedColumnLineComponentOverrides.clear()
         heightMap.clear()
     }
 
@@ -143,18 +156,18 @@ public open class ColumnChart(
         var drawingStart: Float
         var height: Float
         var columnCenterX: Float
-        var column: LineComponent
+        var defaultColumn: LineComponent
         var columnTop: Float
         var columnBottom: Float
         val zeroLinePosition = contentBounds.bottom + chartValues.minY / yRange * contentBounds.height()
 
         model.entries.forEachIndexed { index, entryCollection ->
 
-            column = columns.getRepeating(index)
+            defaultColumn = columns.getRepeating(index)
             drawingStart = getDrawingStart(index, model.entries.size) - horizontalScroll
 
             entryCollection.forEachInIndexed(chartValues.minX..chartValues.maxX) { entryIndex, entry, _ ->
-
+                val column = getAppropriateColumnLineComponent(entry, defaultColumn)
                 val columnInfo = drawingModel?.getOrNull(index)?.get(entry.x)
                 height = (columnInfo?.height ?: (abs(entry.y) / chartValues.lengthY)) * contentBounds.height()
                 val xSpacingMultiplier = (entry.x - chartValues.minX) / chartValues.xStep
@@ -313,6 +326,29 @@ public open class ColumnChart(
                 maxTextWidth = maxWidth.toInt(),
                 rotationDegrees = dataLabelRotationDegrees,
             )
+        }
+    }
+
+    private fun getAppropriateColumnLineComponent(
+        chartEntry: ChartEntry,
+        lineComponent: LineComponent,
+    ): LineComponent {
+        return columnLineComponentOverrider.overrideComponentForEntry(
+            chartEntry = chartEntry,
+            defaultComponent = lineComponent,
+        ) { cacheKey: String, color: Int?, shader: DynamicShader?, strokeColor: Int? ->
+            unusedColumnLineComponentOverrides.remove(cacheKey)
+            columnLineComponentOverridesMap.getOrPut(key = cacheKey) {
+                LineComponent(
+                    color = color ?: lineComponent.color,
+                    thicknessDp = lineComponent.thicknessDp,
+                    shape = lineComponent.shape,
+                    dynamicShader = shader ?: lineComponent.dynamicShader,
+                    margins = lineComponent.margins,
+                    strokeWidthDp = lineComponent.strokeWidthDp,
+                    strokeColor = strokeColor ?: lineComponent.strokeColor,
+                )
+            }
         }
     }
 

@@ -39,7 +39,10 @@ import com.patrykandpatrick.vico.core.chart.put
 import com.patrykandpatrick.vico.core.chart.values.ChartValues
 import com.patrykandpatrick.vico.core.chart.values.ChartValuesManager
 import com.patrykandpatrick.vico.core.chart.values.ChartValuesProvider
+import com.patrykandpatrick.vico.core.chart.values.ComponentOverrider
+import com.patrykandpatrick.vico.core.chart.values.overrideComponentForEntry
 import com.patrykandpatrick.vico.core.component.Component
+import com.patrykandpatrick.vico.core.component.shape.ShapeComponent
 import com.patrykandpatrick.vico.core.component.shape.shader.DynamicShader
 import com.patrykandpatrick.vico.core.component.text.TextComponent
 import com.patrykandpatrick.vico.core.component.text.VerticalPosition
@@ -56,6 +59,7 @@ import com.patrykandpatrick.vico.core.extension.doubled
 import com.patrykandpatrick.vico.core.extension.getRepeating
 import com.patrykandpatrick.vico.core.extension.getStart
 import com.patrykandpatrick.vico.core.extension.half
+import com.patrykandpatrick.vico.core.extension.setAll
 import com.patrykandpatrick.vico.core.extension.withOpacity
 import com.patrykandpatrick.vico.core.formatter.DecimalFormatValueFormatter
 import com.patrykandpatrick.vico.core.formatter.ValueFormatter
@@ -71,6 +75,8 @@ import kotlin.math.min
  * @param targetVerticalAxisPosition if this is set, any [AxisRenderer] with an [AxisPosition] equal to the provided
  * value will use the [ChartValues] provided by this chart. This is meant to be used with [ComposedChart].
  * @param drawingModelInterpolator interpolates the [LineChart]’s [LineChartDrawingModel]s.
+ * @param pointComponentOverrider allows overriding some parameters of the default point [Component] for a specific
+ * [ChartEntryModel]
  */
 public open class LineChart(
     public var lines: List<LineSpec> = listOf(LineSpec()),
@@ -80,6 +86,7 @@ public open class LineChart(
         LineChartDrawingModel.PointInfo,
         LineChartDrawingModel,
         > = DefaultDrawingModelInterpolator(),
+    public var pointComponentOverrider: ComponentOverrider? = null,
 ) : BaseChart<ChartEntryModel>() {
 
     /**
@@ -94,7 +101,13 @@ public open class LineChart(
         line: LineSpec,
         spacingDp: Float,
         targetVerticalAxisPosition: AxisPosition.Vertical? = null,
-    ) : this(listOf(line), spacingDp, targetVerticalAxisPosition)
+        pointComponentOverrider: ComponentOverrider? = null,
+    ) : this(
+        listOf(line),
+        spacingDp,
+        targetVerticalAxisPosition,
+        pointComponentOverrider = pointComponentOverrider,
+    )
 
     /**
      * Defines the appearance of a line in a line chart.
@@ -221,8 +234,9 @@ public open class LineChart(
             context: DrawContext,
             x: Float,
             y: Float,
+            pointOverride: Component?,
         ): Unit = with(context) {
-            point?.drawPoint(context, x, y, pointSizeDp.pixels.half)
+            (pointOverride ?: point)?.drawPoint(context, x, y, pointSizeDp.pixels.half)
         }
 
         /**
@@ -281,6 +295,9 @@ public open class LineChart(
     protected val drawingModelKey: ExtraStore.Key<LineChartDrawingModel> = ExtraStore.Key()
 
     override val entryLocationMap: HashMap<Float, MutableList<Marker.EntryModel>> = HashMap()
+
+    private val pointComponentOverridesMap: HashMap<String, Component> = HashMap()
+    private val unusedPointComponentOverridesMap: MutableList<String> = mutableListOf()
 
     override fun drawChart(
         context: ChartDrawContext,
@@ -366,6 +383,9 @@ public open class LineChart(
                 pointInfoMap = pointInfoMap,
             )
         }
+
+        unusedPointComponentOverridesMap.forEach(pointComponentOverridesMap::remove)
+        unusedPointComponentOverridesMap.clear()
     }
 
     /**
@@ -386,7 +406,14 @@ public open class LineChart(
             pointInfoMap = pointInfoMap,
         ) { _, chartEntry, x, y, previousX, nextX ->
 
-            if (lineSpec.point != null) lineSpec.drawPoint(context = this, x = x, y = y)
+            lineSpec.point
+                ?.let { getAppropriateLineSpecPointComponent(chartEntry, pointComponent = it) }
+                ?.drawPoint(
+                    context = this,
+                    x = x,
+                    y = y,
+                    halfPointSize = lineSpec.pointSizeDp.pixels.half,
+                )
 
             lineSpec.dataLabel.takeIf {
                 horizontalLayout is HorizontalLayout.Segmented ||
@@ -434,6 +461,32 @@ public open class LineChart(
         }
     }
 
+    private fun getAppropriateLineSpecPointComponent(
+        chartEntry: ChartEntry,
+        pointComponent: Component,
+    ): Component {
+        return when (pointComponent) {
+            is ShapeComponent -> pointComponentOverrider.overrideComponentForEntry(
+                chartEntry = chartEntry,
+                defaultComponent = pointComponent,
+            ) { cacheKey: String, color: Int?, shader: DynamicShader?, strokeColor: Int? ->
+                unusedPointComponentOverridesMap.remove(cacheKey)
+                pointComponentOverridesMap.getOrPut(key = cacheKey) {
+                    ShapeComponent(
+                        shape = pointComponent.shape,
+                        color = color ?: pointComponent.color,
+                        dynamicShader = shader ?: pointComponent.dynamicShader,
+                        margins = pointComponent.margins,
+                        strokeWidthDp = pointComponent.strokeWidthDp,
+                        strokeColor = strokeColor ?: pointComponent.strokeColor,
+                    )
+                }
+            }
+
+            else -> pointComponent
+        }
+    }
+
     protected fun ChartDrawContext.getMaxDataLabelWidth(
         entry: ChartEntry,
         x: Float,
@@ -476,6 +529,7 @@ public open class LineChart(
         entryLocationMap.clear()
         linePath.rewind()
         lineBackgroundPath.rewind()
+        unusedPointComponentOverridesMap.setAll(pointComponentOverridesMap.keys)
     }
 
     /**

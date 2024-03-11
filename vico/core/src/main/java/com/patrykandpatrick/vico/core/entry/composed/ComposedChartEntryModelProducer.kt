@@ -116,7 +116,6 @@ public class ComposedChartEntryModelProducer private constructor(dispatcher: Cor
                             maxY = yRange.endInclusive,
                             stackedPositiveY = aggregateYRange.endInclusive,
                             stackedNegativeY = aggregateYRange.start,
-                            xGcd = dataSet.calculateXGcd(),
                             extraStore = mergedExtraStore,
                         )
                     }
@@ -129,9 +128,6 @@ public class ComposedChartEntryModelProducer private constructor(dispatcher: Cor
                         maxY = models.maxOf { it.maxY },
                         stackedPositiveY = models.maxOf { it.stackedPositiveY },
                         stackedNegativeY = models.minOf { it.stackedNegativeY },
-                        xGcd = models.fold<ChartEntryModel, Float?>(null) { gcd, model ->
-                            gcd?.gcdWith(model.xGcd) ?: model.xGcd
-                        } ?: 1f,
                         id = models.map { it.id }.hashCode(),
                         extraStore = mergedExtraStore,
                     ).also { cachedInternalComposedModel = it }
@@ -159,6 +155,16 @@ public class ComposedChartEntryModelProducer private constructor(dispatcher: Cor
         }
     }
 
+    @Deprecated("Use the function passed to the `startAnimation` lambda of `registerForUpdates`.")
+    override suspend fun transformModel(key: Any, fraction: Float) {
+        with(updateReceivers[key] ?: return) {
+            modelTransformer?.transform(extraStore, fraction)
+            val internalModel = getInternalModel(extraStore.copy())
+            currentCoroutineContext().ensureActive()
+            onModelCreated(internalModel, updateChartValues(internalModel))
+        }
+    }
+
     @WorkerThread
     override fun registerForUpdates(
         key: Any,
@@ -181,6 +187,30 @@ public class ComposedChartEntryModelProducer private constructor(dispatcher: Cor
         ).run {
             updateReceivers[key] = this
             handleUpdate()
+        }
+    }
+
+    @Deprecated("Use the overload in which `onModelCreated` has two parameters.")
+    override fun registerForUpdates(
+        key: Any,
+        cancelAnimation: () -> Unit,
+        startAnimation: (transformModel: suspend (chartKey: Any, fraction: Float) -> Unit) -> Unit,
+        getOldModel: () -> ComposedChartEntryModel<ChartEntryModel>?,
+        modelTransformerProvider: Chart.ModelTransformerProvider?,
+        extraStore: MutableExtraStore,
+        updateChartValues: (ComposedChartEntryModel<ChartEntryModel>?) -> ChartValuesProvider,
+        onModelCreated: (ComposedChartEntryModel<ChartEntryModel>?) -> Unit,
+    ) {
+        registerForUpdates(
+            key,
+            cancelAnimation,
+            startAnimation,
+            getOldModel,
+            modelTransformerProvider,
+            extraStore,
+            updateChartValues,
+        ) { model, _ ->
+            onModelCreated(model)
         }
     }
 
@@ -323,9 +353,10 @@ public class ComposedChartEntryModelProducer private constructor(dispatcher: Cor
         override val maxY: Float,
         override val stackedPositiveY: Float,
         override val stackedNegativeY: Float,
-        override val xGcd: Float,
         override val extraStore: ExtraStore,
-    ) : ChartEntryModel
+    ) : ChartEntryModel {
+        override val xGcd: Float get() = entries.calculateXGcd()
+    }
 
     private data class InternalComposedModel(
         override val composedEntryCollections: List<InternalModel>,
@@ -336,10 +367,14 @@ public class ComposedChartEntryModelProducer private constructor(dispatcher: Cor
         override val maxY: Float,
         override val stackedPositiveY: Float,
         override val stackedNegativeY: Float,
-        override val xGcd: Float,
         override val id: Int,
         override val extraStore: ExtraStore,
-    ) : ComposedChartEntryModel<ChartEntryModel>
+    ) : ComposedChartEntryModel<ChartEntryModel> {
+        override val xGcd: Float
+            get() = composedEntryCollections
+                .fold<ChartEntryModel, Float?>(null) { gcd, model -> gcd?.gcdWith(model.xGcd) ?: model.xGcd }
+                ?: 1f
+    }
 
     public companion object {
         /**
